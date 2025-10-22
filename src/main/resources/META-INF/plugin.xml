@@ -1,0 +1,76 @@
+<!-- Plugin Configuration File. Read more: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
+<idea-plugin>
+    <id>id.shabi.gwt</id>
+    <name>Git Worktree Manager</name>
+    <vendor email="plzcmid@gmail.com" url="https://github.com/pcmid/worktree-manager">pcmid</vendor>
+
+    <description><![CDATA[
+    A comprehensive Git worktree management plugin for all JetBrains IDEs.<br>
+    <br>
+    Works with IntelliJ IDEA, GoLand, PyCharm, WebStorm, PhpStorm, CLion, RubyMine, Rider, and more.<br>
+    <br>
+    <b>Features:</b>
+    <ul>
+      <li>List and switch between Git worktrees</li>
+      <li>Create new worktrees from existing or new branches</li>
+      <li>Delete worktrees safely</li>
+      <li>Tool window for easy worktree management</li>
+      <li>Status bar widget showing current worktree</li>
+      <li>Smart project detection (focuses existing window if already open)</li>
+      <li>Flexible opening options (new window or current window)</li>
+    </ul>
+    ]]></description>
+
+    <depends>com.intellij.modules.platform</depends>
+    <depends>Git4Idea</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <!-- Tool Window -->
+        <toolWindow
+                id="Git Worktrees"
+                anchor="left"
+                secondary="true"
+                icon="AllIcons.Vcs.Branch"
+                factoryClass="id.shabi.gwt.ui.WorktreeToolWindowFactory"/>
+
+        <!-- Status Bar Widget -->
+        <statusBarWidgetFactory
+                id="WorktreeStatusBarWidget"
+                implementation="id.shabi.gwt.ui.WorktreeStatusBarWidgetFactory"
+                order="after git"/>
+
+        <!-- Project Service -->
+        <projectService
+                serviceImplementation="id.shabi.gwt.services.WorktreeService"/>
+    </extensions>
+
+    <actions>
+        <!-- Main Menu Group -->
+        <group id="WorktreeActionGroup" text="Git Worktree" description="Git worktree operations" popup="true">
+            <add-to-group group-id="VcsGroups" anchor="last"/>
+            <add-to-group group-id="VcsGlobalGroup" anchor="after" relative-to-action="Vcs.Operations.Popup"/>
+
+            <action id="Worktree.List"
+                    class="id.shabi.gwt.actions.ListWorktreesAction"
+                    text="Show Worktrees"
+                    description="Show all Git worktrees"/>
+
+            <action id="Worktree.Create"
+                    class="id.shabi.gwt.actions.CreateWorktreeAction"
+                    text="Create Worktree..."
+                    description="Create a new Git worktree"/>
+
+            <action id="Worktree.Delete"
+                    class="id.shabi.gwt.actions.DeleteWorktreeAction"
+                    text="Delete Worktree..."
+                    description="Delete a Git worktree"/>
+
+            <separator/>
+
+            <action id="Worktree.Switch"
+                    class="id.shabi.gwt.actions.SwitchWorktreeAction"
+                    text="Switch Worktree..."
+                    description="Switch to another worktree"/>
+        </group>
+    </actions>
+</idea-plugin>
