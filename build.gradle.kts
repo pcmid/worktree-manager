@@ -33,9 +33,6 @@ dependencies {
 
         // Plugin Verifier
         pluginVerifier()
-
-        // IntelliJ Platform Gradle Plugin dependencies
-        instrumentationTools()
     }
 }
 
@@ -72,7 +69,9 @@ tasks {
 }
 
 intellijPlatform {
-    pluginConfiguration {
-        name.set(project.name)
+    pluginVerification {
+        ides {
+            recommended()
+        }
     }
 }
