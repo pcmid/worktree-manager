@@ -79,6 +79,92 @@ When switching to a worktree:
    - **Current Window**: Closes current project and opens worktree
    - **Cancel**: Cancels the operation
 
+## Best Practices
+
+### Recommended Repository Structure
+
+For optimal worktree management, we recommend using a bare repository with separate worktree directories:
+
+```
+~/projects/
+└── my-project/
+    ├── .bare/           # Bare repository (shared Git objects)
+    ├── master/          # Main branch worktree
+    ├── develop/         # Development branch worktree
+    ├── feature-auth/    # Feature branch worktree
+    └── bugfix-123/      # Bugfix branch worktree
+```
+
+### Initial Setup
+
+**1. Convert existing repository to bare + worktree structure:**
+
+```bash
+# Navigate to your project parent directory
+cd ~/projects
+
+# Clone as bare repository
+git clone --bare git@github.com:user/repo.git my-project/.bare
+
+# Navigate to project directory
+cd my-project
+
+# Configure bare repository
+echo "gitdir: ./.bare" > .git
+
+# Create main worktree
+git worktree add master master
+```
+
+**2. Create additional worktrees:**
+
+```bash
+# Create worktree for existing branch
+git worktree add develop develop
+
+# Create worktree with new branch
+git worktree add feature-auth -b feature-auth
+```
+
+### Workflow with This Plugin
+
+**1. Open the main worktree in your IDE:**
+
+```bash
+# Open IntelliJ IDEA (or your JetBrains IDE)
+idea ~/projects/my-project/master
+```
+
+**2. Use the plugin to manage worktrees:**
+
+- View all worktrees in **View → Tool Windows → Git Worktrees**
+- Create new worktrees for features/bugfixes with auto-generated paths
+- Switch between worktrees without closing your current work
+- Each worktree opens in a separate IDE window for parallel development
+
+**3. Parallel development example:**
+
+```
+Window 1: master/        → Code review, testing
+Window 2: feature-auth/  → Implementing authentication
+Window 3: bugfix-123/    → Fixing production bug
+```
+
+### Benefits
+
+- **Isolated environments**: Each branch has its own working directory
+- **No context switching**: No need to stash/commit incomplete work
+- **Parallel builds**: Run different build configurations simultaneously
+- **Faster branch switching**: No checkout delays or dirty working tree issues
+- **Single `.git` storage**: Shared objects save disk space
+
+### Tips
+
+- Use consistent naming: branch name = worktree directory name
+- Keep worktree directories at the same level (siblings)
+- The plugin automatically detects already-open worktrees and focuses the existing window
+- Delete worktrees when branches are merged to keep directory clean
+
 ## Requirements
 
 - **IDE**: Any JetBrains IDE 2025.1+ with Git support, including:
