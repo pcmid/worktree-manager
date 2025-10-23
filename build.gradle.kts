@@ -54,7 +54,7 @@ tasks {
 
     patchPluginXml {
         sinceBuild.set(pluginSinceBuild)
-        untilBuild.set(pluginUntilBuild)
+        // Don't set untilBuild to support all future versions
     }
 
     signPlugin {
