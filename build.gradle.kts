@@ -9,8 +9,8 @@ val pluginUntilBuild: String by project
 
 plugins {
     id("java")
-    id("org.jetbrains.kotlin.jvm") version "2.1.0"
-    id("org.jetbrains.intellij") version "1.17.3"
+    id("org.jetbrains.kotlin.jvm") version "2.2.20"
+    id("org.jetbrains.intellij.platform") version "2.10.2"
 }
 
 group = pluginGroup
@@ -18,12 +18,25 @@ version = pluginVersion
 
 repositories {
     mavenCentral()
+    intellijPlatform {
+        defaultRepositories()
+    }
 }
 
-intellij {
-    version.set(platformVersion)
-    type.set(platformType)
-    plugins.set(platformPlugins.split(',').map { it.trim() })
+dependencies {
+    intellijPlatform {
+        create(platformType, platformVersion)
+        bundledPlugins(platformPlugins.split(',').map { it.trim() })
+
+        // Required for testing
+        testFramework(org.jetbrains.intellij.platform.gradle.TestFrameworkType.Platform)
+
+        // Plugin Verifier
+        pluginVerifier()
+
+        // IntelliJ Platform Gradle Plugin dependencies
+        instrumentationTools()
+    }
 }
 
 tasks {
@@ -33,7 +46,9 @@ tasks {
     }
 
     withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-        kotlinOptions.jvmTarget = "17"
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+        }
     }
 
     buildSearchableOptions {
@@ -53,5 +68,11 @@ tasks {
 
     publishPlugin {
         token.set(System.getenv("PUBLISH_TOKEN"))
+    }
+}
+
+intellijPlatform {
+    pluginConfiguration {
+        name.set(project.name)
     }
 }
