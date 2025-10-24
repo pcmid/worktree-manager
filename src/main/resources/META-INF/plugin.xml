@@ -19,6 +19,13 @@
       <li>Smart project detection (focuses existing window if already open)</li>
       <li>Flexible opening options (new window or current window)</li>
     </ul>
+    <br>
+    <b>Links:</b>
+    <ul>
+      <li><a href="https://github.com/pcmid/worktree-manager">Source Code</a></li>
+      <li><a href="https://github.com/pcmid/worktree-manager/issues">Report Issues</a></li>
+      <li><a href="https://github.com/pcmid/worktree-manager/blob/master/LICENSE">License: MIT</a></li>
+    </ul>
     ]]></description>
 
     <depends>com.intellij.modules.platform</depends>
