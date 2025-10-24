@@ -21,6 +21,7 @@ import javax.swing.DefaultListModel
 import javax.swing.JComponent
 import javax.swing.JPanel
 import javax.swing.ListSelectionModel
+import javax.swing.border.EmptyBorder
 
 /**
  * Tool window for managing Git worktrees
@@ -32,6 +33,7 @@ class WorktreeToolWindow(private val project: Project) {
     private val worktreeList = JBList(listModel).apply {
         selectionMode = ListSelectionModel.SINGLE_SELECTION
         cellRenderer = WorktreeListCellRenderer()
+        border = EmptyBorder(5, 5, 5, 5)  // Add padding: top, left, bottom, right
     }
 
     private val panel = SimpleToolWindowPanel(true, true)
