@@ -4,14 +4,15 @@ import id.shabi.gwt.models.CreateWorktreeRequest
 import id.shabi.gwt.services.WorktreeService
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.TextFieldWithBrowseButton
 import com.intellij.openapi.ui.ValidationInfo
+import com.intellij.ui.JBColor
+import com.intellij.ui.TextFieldWithAutoCompletion
+import com.intellij.ui.components.JBLabel
 import com.intellij.ui.dsl.builder.panel
 import java.nio.file.Files
 import java.nio.file.Paths
-import javax.swing.DefaultComboBoxModel
 import javax.swing.JComponent
 
 /**
@@ -21,9 +22,11 @@ class CreateWorktreeDialog(private val project: Project) : DialogWrapper(project
 
     private val worktreeService = project.getService(WorktreeService::class.java)
 
-    private val branchComboBox = ComboBox<String>().apply {
-        isEditable = true
-    }
+    // Store all branches for auto-completion
+    private var allBranches: List<String> = emptyList()
+
+    // Branch text field with auto-completion
+    private lateinit var branchTextField: TextFieldWithAutoCompletion<String>
 
     private val pathField = TextFieldWithBrowseButton().apply {
         addBrowseFolderListener(
@@ -34,6 +37,12 @@ class CreateWorktreeDialog(private val project: Project) : DialogWrapper(project
         )
     }
 
+    // Error label for displaying validation errors
+    private val errorLabel = JBLabel().apply {
+        foreground = JBColor.RED
+        isVisible = false
+    }
+
     // Track whether user has manually modified the path
     private var isPathManuallySet = false
 
@@ -42,10 +51,16 @@ class CreateWorktreeDialog(private val project: Project) : DialogWrapper(project
 
     init {
         title = "Create Git Worktree"
+        // Load branches first
+        allBranches = worktreeService.getBranches()
+        // Create text field with auto-completion
+        branchTextField = TextFieldWithAutoCompletion.create(
+            project,
+            allBranches,
+            true,  // show auto-popup
+            ""     // initial text
+        )
         init()
-        loadBranches()
-        // Set initial path based on first branch
-        updatePathFromBranch()
         // Setup listeners after dialog is initialized
         setupListeners()
     }
@@ -53,7 +68,7 @@ class CreateWorktreeDialog(private val project: Project) : DialogWrapper(project
     override fun createCenterPanel(): JComponent {
         val centerPanel = panel {
             row("Branch:") {
-                cell(branchComboBox)
+                cell(branchTextField)
                     .resizableColumn()
                     .align(com.intellij.ui.dsl.builder.AlignX.FILL)
             }
@@ -61,6 +76,9 @@ class CreateWorktreeDialog(private val project: Project) : DialogWrapper(project
                 cell(pathField)
                     .resizableColumn()
                     .align(com.intellij.ui.dsl.builder.AlignX.FILL)
+            }
+            row {
+                cell(errorLabel)
             }
             row {
                 comment("Path will be auto-generated from branch name. If the branch doesn't exist, a new one will be created.")
@@ -71,7 +89,7 @@ class CreateWorktreeDialog(private val project: Project) : DialogWrapper(project
         centerPanel.addMouseListener(object : java.awt.event.MouseAdapter() {
             override fun mousePressed(e: java.awt.event.MouseEvent?) {
                 // When clicking on blank area, update path if branch has focus
-                if (branchComboBox.editor.editorComponent.hasFocus() && !isPathManuallySet) {
+                if (branchTextField.hasFocus() && !isPathManuallySet) {
                     cancelUpdateTimer()
                     updatePathFromBranch()
                 }
@@ -84,8 +102,8 @@ class CreateWorktreeDialog(private val project: Project) : DialogWrapper(project
     }
 
     private fun setupListeners() {
-        // Listen to branch combo box focus lost - update path when user leaves the field
-        branchComboBox.editor.editorComponent.addFocusListener(object : java.awt.event.FocusAdapter() {
+        // Listen to branch text field focus lost - update path when user leaves the field
+        branchTextField.addFocusListener(object : java.awt.event.FocusAdapter() {
             override fun focusLost(e: java.awt.event.FocusEvent?) {
                 if (!isPathManuallySet) {
                     cancelUpdateTimer()
@@ -94,43 +112,28 @@ class CreateWorktreeDialog(private val project: Project) : DialogWrapper(project
             }
         })
 
-        // Also listen to selection changes from dropdown
-        branchComboBox.addActionListener {
-            if (!isPathManuallySet) {
-                cancelUpdateTimer()
-                updatePathFromBranch()
-            }
-        }
+        // Listen to text changes in branch input for delayed path update
+        branchTextField.addDocumentListener(
+            object : com.intellij.openapi.editor.event.DocumentListener {
+                override fun documentChanged(event: com.intellij.openapi.editor.event.DocumentEvent) {
+                    // Trigger validation immediately
+                    initValidation()
 
-        // Listen to text changes in branch input for delayed update
-        val editorComponent = branchComboBox.editor?.editorComponent
-        if (editorComponent is javax.swing.text.JTextComponent) {
-            editorComponent.document.addDocumentListener(
-                object : javax.swing.event.DocumentListener {
-                    override fun insertUpdate(e: javax.swing.event.DocumentEvent?) = onTextChanged()
-                    override fun removeUpdate(e: javax.swing.event.DocumentEvent?) = onTextChanged()
-                    override fun changedUpdate(e: javax.swing.event.DocumentEvent?) = onTextChanged()
-
-                    private fun onTextChanged() {
-                        // Trigger validation immediately
-                        initValidation()
-
-                        // Schedule path update
-                        if (!isPathManuallySet) {
-                            // Cancel existing timer
-                            cancelUpdateTimer()
-                            // Schedule new update after 500ms
-                            updateTimer = javax.swing.Timer(500) {
-                                updatePathFromBranch()
-                            }.apply {
-                                isRepeats = false
-                                start()
-                            }
+                    // Schedule path update
+                    if (!isPathManuallySet) {
+                        // Cancel existing timer
+                        cancelUpdateTimer()
+                        // Schedule new update after 500ms
+                        updateTimer = javax.swing.Timer(500) {
+                            updatePathFromBranch()
+                        }.apply {
+                            isRepeats = false
+                            start()
                         }
                     }
                 }
-            )
-        }
+            }
+        )
 
         // Track manual path changes and trigger validation
         pathField.textField.document.addDocumentListener(object : javax.swing.event.DocumentListener {
@@ -156,13 +159,7 @@ class CreateWorktreeDialog(private val project: Project) : DialogWrapper(project
     }
 
     private fun updatePathFromBranch() {
-        // Get branch name from editor component (for real-time text) or selectedItem (for dropdown selection)
-        val editorComponent = branchComboBox.editor?.editorComponent
-        val branchName = if (editorComponent is javax.swing.text.JTextComponent) {
-            editorComponent.text?.trim() ?: ""
-        } else {
-            (branchComboBox.selectedItem as? String)?.trim() ?: ""
-        }
+        val branchName = branchTextField.text.trim()
 
         if (branchName.isNotEmpty()) {
             // Get project base path and create sibling directory
@@ -178,52 +175,57 @@ class CreateWorktreeDialog(private val project: Project) : DialogWrapper(project
         }
     }
 
-    private fun loadBranches() {
-        val branches = worktreeService.getBranches()
-        val model = DefaultComboBoxModel<String>()
-        branches.forEach { model.addElement(it) }
-        branchComboBox.model = model
-        if (model.size > 0) {
-            branchComboBox.selectedIndex = 0
-        }
-    }
-
     override fun doValidate(): ValidationInfo? {
+        // Clear previous error
+        errorLabel.isVisible = false
+        errorLabel.text = ""
+
         val path = pathField.text.trim()
         if (path.isEmpty()) {
-            return ValidationInfo("Path cannot be empty", pathField)
+            val error = "Path cannot be empty"
+            errorLabel.text = error
+            errorLabel.isVisible = true
+            return ValidationInfo(error, pathField)
         }
 
         val pathObj = Paths.get(path)
         if (Files.exists(pathObj)) {
-            return ValidationInfo("Path already exists", pathField)
+            val error = "Path already exists"
+            errorLabel.text = error
+            errorLabel.isVisible = true
+            return ValidationInfo(error, pathField)
         }
 
-        // Get branch name from editor component (for real-time text) or selectedItem (for dropdown selection)
-        val editorComponent = branchComboBox.editor?.editorComponent
-        val branch = if (editorComponent is javax.swing.text.JTextComponent) {
-            editorComponent.text
-        } else {
-            branchComboBox.selectedItem as? String
-        }
+        val branch = branchTextField.text
 
         if (branch.isNullOrEmpty()) {
-            return ValidationInfo("Please enter a branch name", branchComboBox)
+            val error = "Please enter a branch name"
+            errorLabel.text = error
+            errorLabel.isVisible = true
+            return ValidationInfo(error, branchTextField)
         }
 
         val branchName = branch.trim()
         if (branchName.isEmpty()) {
-            return ValidationInfo("Branch name cannot be empty", branchComboBox)
+            val error = "Branch name cannot be empty"
+            errorLabel.text = error
+            errorLabel.isVisible = true
+            return ValidationInfo(error, branchTextField)
         }
         if (!branchName.matches(Regex("[a-zA-Z0-9/_-]+"))) {
-            return ValidationInfo("Invalid branch name", branchComboBox)
+            val error = "Invalid branch name"
+            errorLabel.text = error
+            errorLabel.isVisible = true
+            return ValidationInfo(error, branchTextField)
         }
 
         // Check for branch name conflicts with existing branches
         val existingBranches = worktreeService.getBranches()
         val conflictError = checkBranchNameConflict(branchName, existingBranches)
         if (conflictError != null) {
-            return ValidationInfo(conflictError, branchComboBox)
+            errorLabel.text = conflictError
+            errorLabel.isVisible = true
+            return ValidationInfo(conflictError, branchTextField)
         }
 
         return null
@@ -250,14 +252,7 @@ class CreateWorktreeDialog(private val project: Project) : DialogWrapper(project
 
     fun getRequest(): CreateWorktreeRequest {
         val path = Paths.get(pathField.text.trim())
-
-        // Get branch name from editor component (for real-time text) or selectedItem (for dropdown selection)
-        val editorComponent = branchComboBox.editor?.editorComponent
-        val branch = if (editorComponent is javax.swing.text.JTextComponent) {
-            editorComponent.text?.trim() ?: ""
-        } else {
-            (branchComboBox.selectedItem as? String)?.trim() ?: ""
-        }
+        val branch = branchTextField.text.trim()
 
         // Check if branch exists in the list (which means it's an existing branch)
         val existingBranches = worktreeService.getBranches()
