@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Add padding to worktree list in tool window for better visual appearance
 
-## [0.0.16] - 2025-01-24
+## [0.0.16] - 2025-10-24
 
 ### Added
 - Auto-completion for branch selection with real-time filtering
@@ -26,7 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Performance issues with branch filtering
 - Validation errors only showing on hover
 
-## [0.0.15] - 2025-01-23
+## [0.0.15] - 2025-10-23
 
 ### Added
 - Initial release
