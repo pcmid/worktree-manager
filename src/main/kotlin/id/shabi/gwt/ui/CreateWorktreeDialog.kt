@@ -169,8 +169,8 @@ class CreateWorktreeDialog(private val project: Project) : DialogWrapper(project
             val basePath = project.basePath ?: return
             val parentPath = Paths.get(basePath).parent ?: return
 
-            // Clean branch name for use as directory name
-            val dirName = branchName.replace("/", "-").replace("\\", "-")
+            // Use branch name directly as directory name (preserves slashes for subdirectories)
+            val dirName = branchName
             val newPath = parentPath.resolve(dirName).toString()
 
             // Update path without triggering manual flag
