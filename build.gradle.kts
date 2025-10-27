@@ -48,10 +48,6 @@ tasks {
         }
     }
 
-    buildSearchableOptions {
-        enabled = false
-    }
-
     patchPluginXml {
         sinceBuild.set(pluginSinceBuild)
         // Don't set untilBuild to support all future versions
