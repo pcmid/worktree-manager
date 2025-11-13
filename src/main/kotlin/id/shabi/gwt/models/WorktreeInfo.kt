@@ -46,6 +46,7 @@ data class WorktreeInfo(
 data class CreateWorktreeRequest(
     val path: Path,
     val branch: String,
+    val remoteBranch: String? = null,
     val createNewBranch: Boolean = false,
     val checkout: Boolean = true,
     val force: Boolean = false

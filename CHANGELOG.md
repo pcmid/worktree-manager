@@ -7,8 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.17] - 2025-11-13
+
+### Added
+- Support for creating worktrees from remote branches
+- Auto-completion now includes both local and remote branches
+- Automatic tracking setup when creating local branches from remote branches
+
 ### Changed
 - Add padding to worktree list in tool window for better visual appearance
+- Branch listing now separates local and remote branches internally for better handling
+- Worktree path suggestion now strips remote prefix from remote branch names (e.g., `origin/feature` → `feature`)
 
 ## [0.0.16] - 2025-10-24
 

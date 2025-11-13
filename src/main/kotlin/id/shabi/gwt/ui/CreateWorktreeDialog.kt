@@ -51,8 +51,8 @@ class CreateWorktreeDialog(private val project: Project) : DialogWrapper(project
 
     init {
         title = "Create Git Worktree"
-        // Load branches first
-        allBranches = worktreeService.getBranches()
+        // Load all branches (local + remote) for auto-completion
+        allBranches = worktreeService.getAllBranches()
         // Create text field with auto-completion
         branchTextField = TextFieldWithAutoCompletion.create(
             project,
@@ -166,8 +166,16 @@ class CreateWorktreeDialog(private val project: Project) : DialogWrapper(project
             val basePath = project.basePath ?: return
             val parentPath = Paths.get(basePath).parent ?: return
 
-            // Use branch name directly as directory name (preserves slashes for subdirectories)
-            val dirName = branchName
+            // Remove remote prefix if present (e.g., origin/feature -> feature)
+            val remoteBranches = worktreeService.getRemoteBranches()
+            val dirName = if (remoteBranches.contains(branchName)) {
+                // Extract local branch name (everything after first '/')
+                branchName.substringAfter("/")
+            } else {
+                // Use branch name directly (preserves slashes for subdirectories)
+                branchName
+            }
+
             val newPath = parentPath.resolve(dirName).toString()
 
             // Update path without triggering manual flag
@@ -252,15 +260,32 @@ class CreateWorktreeDialog(private val project: Project) : DialogWrapper(project
 
     fun getRequest(): CreateWorktreeRequest {
         val path = Paths.get(pathField.text.trim())
-        val branch = branchTextField.text.trim()
+        val inputBranch = branchTextField.text.trim()
 
-        // Check if branch exists in the list (which means it's an existing branch)
-        val existingBranches = worktreeService.getBranches()
-        val isNewBranch = !existingBranches.contains(branch)
+        val localBranches = worktreeService.getBranches()
+        val remoteBranches = worktreeService.getRemoteBranches()
+
+        // Detect if input is a remote branch
+        val (branch, remoteBranch, isNewBranch) = when {
+            // Case 1: Input is in remote branches list
+            remoteBranches.contains(inputBranch) -> {
+                // Extract local branch name (everything after first '/')
+                val localBranchName = inputBranch.substringAfter("/")
+                // Check if corresponding local branch already exists
+                val localExists = localBranches.contains(localBranchName)
+                Triple(localBranchName, inputBranch, !localExists)
+            }
+            // Case 2: Input is a local branch or new branch name
+            else -> {
+                val exists = localBranches.contains(inputBranch)
+                Triple(inputBranch, null, !exists)
+            }
+        }
 
         return CreateWorktreeRequest(
             path = path,
             branch = branch,
+            remoteBranch = remoteBranch,
             createNewBranch = isNewBranch,
             checkout = true,
             force = false

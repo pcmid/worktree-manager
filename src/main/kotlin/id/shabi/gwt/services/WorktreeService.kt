@@ -46,16 +46,28 @@ class WorktreeService(private val project: Project) {
         val args = buildList {
             add("worktree")
             add("add")
+
             if (request.createNewBranch) {
                 add("-b")
                 add(request.branch)
+
+                // If remote branch is specified, create local branch tracking remote
+                if (request.remoteBranch != null) {
+                    add("--track")
+                }
             }
+
             if (request.force) {
                 add("--force")
             }
+
             add(request.path.toString())
+
             if (!request.createNewBranch) {
                 add(request.branch)
+            } else if (request.remoteBranch != null) {
+                // Specify the remote branch as the base for the new local branch
+                add(request.remoteBranch)
             }
         }
 
@@ -128,12 +140,12 @@ class WorktreeService(private val project: Project) {
     }
 
     /**
-     * Gets all available branches
+     * Gets local branches only
      */
     fun getBranches(): List<String> {
         val repoRoot = project.basePath ?: return emptyList()
 
-        val output = executeGitCommand(repoRoot, "branch", "-a", "--format=%(refname:short)")
+        val output = executeGitCommand(repoRoot, "branch", "--format=%(refname:short)")
         if (!output.isSuccess) {
             log.warn("Failed to list branches: ${output.stderr}")
             return emptyList()
@@ -141,7 +153,31 @@ class WorktreeService(private val project: Project) {
 
         return output.stdout.lines()
             .map { it.trim() }
-            .filter { it.isNotEmpty() && !it.startsWith("origin/HEAD") }
+            .filter { it.isNotEmpty() }
+    }
+
+    /**
+     * Gets remote branches only
+     */
+    fun getRemoteBranches(): List<String> {
+        val repoRoot = project.basePath ?: return emptyList()
+
+        val output = executeGitCommand(repoRoot, "branch", "-r", "--format=%(refname:short)")
+        if (!output.isSuccess) {
+            log.warn("Failed to list remote branches: ${output.stderr}")
+            return emptyList()
+        }
+
+        return output.stdout.lines()
+            .map { it.trim() }
+            .filter { it.isNotEmpty() && !it.contains("HEAD") }
+    }
+
+    /**
+     * Gets all branches (local + remote) for auto-completion
+     */
+    fun getAllBranches(): List<String> {
+        return getBranches() + getRemoteBranches()
     }
 
     private fun executeGitCommand(workingDir: String, vararg args: String): ProcessOutput {
