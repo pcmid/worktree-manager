@@ -40,8 +40,7 @@ class DeleteWorktreeAction : AnAction() {
             "Delete Worktree",
             arrayOf("OK", "Cancel"),
             0,
-            Messages.getWarningIcon(),
-            null
+            Messages.getWarningIcon()
         )
 
         if (choice != 0) { // OK button

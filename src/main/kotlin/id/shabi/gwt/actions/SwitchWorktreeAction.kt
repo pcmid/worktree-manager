@@ -52,8 +52,7 @@ class SwitchWorktreeAction : AnAction() {
             "Select Worktree",
             arrayOf("OK", "Cancel"),
             0,
-            Messages.getQuestionIcon(),
-            null
+            Messages.getQuestionIcon()
         )
 
         if (choice != 0) { // OK button
