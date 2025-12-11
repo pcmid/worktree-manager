@@ -10,7 +10,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      pull-requests: read
 
     steps:
       - name: Checkout code
@@ -45,15 +44,20 @@ jobs:
           fi
           ls -lh build/distributions/
 
-      - name: Build Changelog
+      - name: Extract changelog for version
         id: changelog
-        uses: mikepenz/release-changelog-builder-action@v5
-        with:
-          configuration: ".github/release.yml"
-          toTag: ${{ github.ref }}
-          failOnError: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="${{ steps.version.outputs.VERSION }}"
+          # Extract the section for this version from CHANGELOG.md
+          CHANGELOG=$(awk -v ver="## [$VERSION]" '
+            $0 ~ ver {found=1; next}
+            found && /^## \[/ {exit}
+            found {print}
+          ' CHANGELOG.md)
+          # Use heredoc to handle multiline output
+          echo "CHANGELOG<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGELOG" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
@@ -61,7 +65,7 @@ jobs:
           draft: false
           prerelease: false
           name: Release v${{ steps.version.outputs.VERSION }}
-          body: ${{ steps.changelog.outputs.changelog }}
+          body: ${{ steps.changelog.outputs.CHANGELOG }}
           files: |
             build/distributions/*.zip
         env:
