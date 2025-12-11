@@ -49,8 +49,9 @@ jobs:
         run: |
           VERSION="${{ steps.version.outputs.VERSION }}"
           # Extract the section for this version from CHANGELOG.md
-          CHANGELOG=$(awk -v ver="## [$VERSION]" '
-            $0 ~ ver {found=1; next}
+          # Note: brackets need to be escaped in awk regex
+          CHANGELOG=$(awk -v ver="$VERSION" '
+            $0 ~ "## \\[" ver "\\]" {found=1; next}
             found && /^## \[/ {exit}
             found {print}
           ' CHANGELOG.md)
