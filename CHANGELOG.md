@@ -7,10 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Fixed
-- Fixed compatibility with IntelliJ IDEA 2025.3 (OpenProjectTask API changes)
-- Fixed deprecated API warnings for Messages.showDialog
-- Refactored StatusBarWidget to use modern TextPresentation API
+## [0.1.0] - 2025-12-11
 
 ### Added
 - Force delete option when deleting worktrees (checkbox to ignore uncommitted changes)
@@ -20,6 +17,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated to use unified IntelliJ Platform (intellijIdea)
 - JVM target upgraded from 17 to 21
 - Streamlined worktree creation flow: removed success message, directly shows open project dialog
+
+### Fixed
+- Fixed compatibility with IntelliJ IDEA 2025.3 (OpenProjectTask API changes)
+- Fixed deprecated API warnings for Messages.showDialog
+- Refactored StatusBarWidget to use modern TextPresentation API
 
 ## [0.0.17] - 2025-11-13
 
