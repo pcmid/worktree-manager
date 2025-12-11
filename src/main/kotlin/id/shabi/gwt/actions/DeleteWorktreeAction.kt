@@ -54,19 +54,27 @@ class DeleteWorktreeAction : AnAction() {
 
         val selectedWorktree = worktrees[selectedIndex]
 
-        val confirmChoice = Messages.showYesNoDialog(
-            project,
+        var forceDelete = false
+        val exitCode = Messages.showCheckboxMessageDialog(
             "Are you sure you want to delete worktree '${selectedWorktree.displayName}'?\n\n" +
                     "Path: ${selectedWorktree.path}\n" +
                     "Branch: ${selectedWorktree.branch ?: "N/A"}\n\n" +
                     "This action cannot be undone.",
             "Confirm Delete Worktree",
+            arrayOf("Delete", "Cancel"),
+            "Force delete (ignore uncommitted changes)",
+            false,
+            0,
+            0,
             Messages.getWarningIcon()
-        )
+        ) { index, checkbox ->
+            forceDelete = checkbox.isSelected
+            index
+        }
 
-        if (confirmChoice == Messages.YES) {
+        if (exitCode == 0) {
             ApplicationManager.getApplication().executeOnPooledThread {
-                worktreeService.deleteWorktree(selectedWorktree)
+                worktreeService.deleteWorktree(selectedWorktree, forceDelete)
                     .onSuccess {
                         ApplicationManager.getApplication().invokeLater {
                             Messages.showInfoMessage(

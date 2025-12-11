@@ -160,22 +160,8 @@ class WorktreeToolWindow(private val project: Project) {
                         .onSuccess { created ->
                             ApplicationManager.getApplication().invokeLater {
                                 refreshWorktrees()
-                                Messages.showInfoMessage(
-                                    project,
-                                    "Worktree '${created.displayName}' created successfully",
-                                    "Create Worktree"
-                                )
-
-                                // Ask if user wants to open it
-                                val openChoice = Messages.showYesNoDialog(
-                                    project,
-                                    "Do you want to open the new worktree?",
-                                    "Open Worktree",
-                                    Messages.getQuestionIcon()
-                                )
-                                if (openChoice == Messages.YES) {
-                                    switchToWorktree(created)
-                                }
+                                // Directly ask to open the new worktree
+                                switchToWorktree(created)
                             }
                         }
                         .onFailure { error ->
@@ -204,24 +190,27 @@ class WorktreeToolWindow(private val project: Project) {
                 return
             }
 
-            val choice = Messages.showYesNoDialog(
-                project,
-                "Are you sure you want to delete worktree '${selected.displayName}'?",
+            var forceDelete = false
+            val exitCode = Messages.showCheckboxMessageDialog(
+                "Are you sure you want to delete worktree '${selected.displayName}'?\n\nPath: ${selected.path}",
                 "Delete Worktree",
+                arrayOf("Delete", "Cancel"),
+                "Force delete (ignore uncommitted changes)",
+                false,
+                0,
+                0,
                 Messages.getWarningIcon()
-            )
+            ) { index, checkbox ->
+                forceDelete = checkbox.isSelected
+                index
+            }
 
-            if (choice == Messages.YES) {
+            if (exitCode == 0) {
                 ApplicationManager.getApplication().executeOnPooledThread {
-                    worktreeService.deleteWorktree(selected)
+                    worktreeService.deleteWorktree(selected, forceDelete)
                         .onSuccess {
                             ApplicationManager.getApplication().invokeLater {
                                 refreshWorktrees()
-                                Messages.showInfoMessage(
-                                    project,
-                                    "Worktree deleted successfully",
-                                    "Delete Worktree"
-                                )
                             }
                         }
                         .onFailure { error ->

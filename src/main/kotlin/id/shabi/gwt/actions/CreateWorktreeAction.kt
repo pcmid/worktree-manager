@@ -35,12 +35,6 @@ class CreateWorktreeAction : AnAction() {
                                 // Trigger refresh - in real implementation would use proper event system
                             }
 
-                            Messages.showInfoMessage(
-                                project,
-                                "Worktree '${created.displayName}' created successfully at ${created.path}",
-                                "Create Worktree"
-                            )
-
                             // Check if project is already open and focus it
                             val projectPath = Paths.get(created.path.toString())
                             val existingProject = ProjectUtil.findAndFocusExistingProjectForPath(projectPath)

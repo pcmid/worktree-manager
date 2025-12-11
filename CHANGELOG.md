@@ -12,10 +12,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed deprecated API warnings for Messages.showDialog
 - Refactored StatusBarWidget to use modern TextPresentation API
 
+### Added
+- Force delete option when deleting worktrees (checkbox to ignore uncommitted changes)
+
 ### Changed
 - Upgraded platform target from 2025.1 to 2025.3
 - Updated to use unified IntelliJ Platform (intellijIdea)
 - JVM target upgraded from 17 to 21
+- Streamlined worktree creation flow: removed success message, directly shows open project dialog
 
 ## [0.0.17] - 2025-11-13
 
